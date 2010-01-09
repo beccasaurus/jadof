@@ -1,5 +1,7 @@
-cms.rb
-======
+JADOF
+=====
+
+**{JADOF}** is **J**ust **a** **D**irectory **o**f **F**iles
 
 As a coder, I like my blog/cms sites to be simple and database-free.
 
