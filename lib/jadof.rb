@@ -7,6 +7,18 @@ module JADOF
     # The root directory that pages are loaded from
     attr_accessor :dir
 
+    # This can be set to a standard cache object and, if it is set, 
+    # all pages will be cached so they don't have to be re-opened 
+    # and we don't have to look for the files.
+    #
+    # Any cache object that supports these standard methods is supported:
+    #   
+    #   get(key)
+    #   set(key, value)
+    #   clear
+    #
+    attr_accessor :cache
+
     # Get a Page by name
     def get name
       matches = Dir[ File.join dir, "#{ name }.*" ]
@@ -51,6 +63,7 @@ module JADOF
 
     # Loads a Page from a given path to a file
     def from_path path
+      path      = File.expand_path path
       filename  = File.basename path
       name      = filename[/^[^\.]+/] # get everything before a .
       body      = File.read path

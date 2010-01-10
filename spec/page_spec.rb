@@ -1,6 +1,7 @@
 require File.dirname(__FILE__) + '/spec_helper'
 
 require 'fileutils'
+require 'hash-cache'
 
 # Helper for creating page files in the specs, at spec/pages/
 def create_page filename, body = ''
@@ -13,6 +14,8 @@ def create_page filename, body = ''
     spaces = body.lines.first[/^[ ]+/]
     body.gsub!(/^#{spaces}/, '') if spaces
   end
+
+  body ||= '' # if it's nil for some reason, make it an empty string
 
   path = File.join(Page.dir, filename)
   FileUtils.mkdir_p File.dirname(path)
@@ -181,7 +184,21 @@ describe Page do
 
   describe 'Caching' do
 
-    it 'should be easy to give it a place to cache pages (standard get/set cache)'
+    before do
+      Page.cache = Hash::Cache.new # Hash that has #get(k) and #set(k,v) methods and #clear
+    end
+
+    it 'with the cache enabled, files should only be #read once' do
+      create_page 'foo.markdown'
+      path = File.join File.dirname(__FILE__), 'pages', 'foo.markdown'
+
+      File.should_receive(:read).with(path).once # only once!
+
+      Page[:foo]
+      Page[:foo]
+    end
+
+    it 'with the cache enabled, Dir[] should only look for files once'
 
     it 'should be able to clear the cache'
 
