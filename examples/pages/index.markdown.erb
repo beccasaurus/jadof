@@ -1,0 +1,6 @@
+Hello, this is the content of the index page!
+
+Our Pages:
+<% for page in Page.all %>
+ * <a href="/<%= page.name %>"><%= page.name %></a>
+<% end %>

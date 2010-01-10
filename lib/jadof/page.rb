@@ -9,6 +9,8 @@ module JADOF #:nodoc:
   class Page
     include IndifferentVariableHash
 
+    DEFAULT_DIR = './pages/'
+
     # @return [String] A simple name for this {Page}.
     #
     # If the filename is `foo.markdown`, the name will be `foo`
@@ -66,7 +68,7 @@ module JADOF #:nodoc:
 
     class << self
 
-      # @return [String] The root directory that pages are loaded from.  Defaults to "./posts/"
+      # @return [String] The root directory that pages are loaded from.  Defaults to "./pages/"
       attr_accessor :dir
 
       attr_accessor :formatters
@@ -86,7 +88,9 @@ module JADOF #:nodoc:
 
     end
 
-    @dir ||= './posts/' # default Page.dir
+    def self.dir
+      @dir ||= File.expand_path DEFAULT_DIR
+    end
 
     # When dir is set, we save it as an expanded path.
     # We also clear the cache (if it's enabled)
@@ -101,7 +105,7 @@ module JADOF #:nodoc:
     # the formatted text.
     # @return [Hash{String => #call}]
     def self.formatters
-      @formatters || {}
+      @formatters ||= {}
     end
 
     # @return [Page] Get a Page by name
