@@ -10,20 +10,19 @@ def create_page filename, body = ''
   # grab the spaces (if any) from the 1st line and remove that
   # many spaces from the rest of the lines so our specs look clean
   if body.lines.first
-    puts body.lines.first.inspect
     spaces = body.lines.first[/^[ ]+/]
-    puts "SPACES: #{ spaces.inspect }"
     body.gsub!(/^#{spaces}/, '') if spaces
   end
 
-  FileUtils.mkdir_p Page.dir
-  File.open(File.join(Page.dir, filename), 'w'){|f| f << body }
+  path = File.join(Page.dir, filename)
+  FileUtils.mkdir_p File.dirname(path)
+  File.open(path, 'w'){|f| f << body }
 end
 
 # Helper for deleting all pages in spec/pages/
 def delete_pages
   Dir[File.join(Page.dir, '**/*')].each do |page|
-    FileUtils.rm page
+    FileUtils.rm_rf page
   end
 end
 
@@ -32,6 +31,10 @@ describe Page do
   before do
     Page.dir = File.dirname(__FILE__) + '/pages'
     delete_pages
+  end
+
+  after :all do
+    delete_pages # clean up!
   end
 
   it '#create_page works as expected for creating fake pages for these specs' do
@@ -107,22 +110,83 @@ describe Page do
   end
 
   it 'can add any kind of arbitrary data to a page via YAML' do
-    pending
+    create_page 'foo.markdown'
+    Page[:foo].foo.should be_nil # Page's don't raise NoMethodError's
+
     create_page 'foo.markdown', %{
       ---
-      title:  RubyFlow is protecting you from great articles!
-      layout: post
-      date:   2009-04-06
-      tags:   rubyflow, ruby, news
+      foo: bar
       ---
       Hello World!
     }
+
+    Page[:foo].foo.should == 'bar' # got value from YAML
   end
 
-  it 'can get a page by the value of any arbitrary data (from the YAML)'
+  it 'can get a page by the value of any arbitrary data (from the YAML)' do
+    create_page 'foo.markdown', %{
+      ---
+      foo: bar
+      ---
+      Hello World!
+    }
 
-  it 'supports 1 level of sub-directories'
+    Page.first(:foo => 'not bar').should     be_nil
+    Page.first(:foo => 'bar'    ).should_not be_nil
+    Page.first(:foo => 'bar'    ).foo.should == 'bar'
+  end
 
-  it 'supports n levels of sub-directories'
+  it 'can get a page by *multiple* arbitrary conditions' do
+    create_page 'foo.markdown', %{
+      ---
+      foo: bar
+      ---
+      Hello World!
+    }
+
+    Page.where(:foo => 'bar', :name => 'not foo').should be_empty
+    Page.where(:foo => 'not bar', :name => 'foo').should be_empty
+    Page.where(:foo => 'bar', :name => 'foo').should_not be_empty
+    Page.where(:foo => 'bar', :name => 'foo').first.name.should == 'foo'
+  end
+
+  it 'supports 1 level of sub-directories' do
+    create_page 'hi.markdown'
+    Page['hi'].parent.should == ''
+
+    create_page 'foo/bar.markdown'
+
+    Page['foo/bar'].name.should     == 'bar'
+    Page['foo/bar'].parent.should   == 'foo'
+    Page['foo/bar'].filename.should == 'bar.markdown'
+    Page['foo/bar'].path.should include('foo/bar.markdown')
+    
+    Page.first(:name => 'bar').name.should     == 'bar'
+    Page.first(:name => 'bar').filename.should == 'bar.markdown'
+    Page.first(:name => 'bar').path.should include('foo/bar.markdown')
+  end
+
+  it 'supports n levels of sub-directories' do
+    create_page 'foo/bar/hello/there/crazy/person-123.markdown'
+
+    Page['foo/bar/hello/there/crazy/person-123'].name.should     == 'person-123'
+    Page['foo/bar/hello/there/crazy/person-123'].parent.should   == 'foo/bar/hello/there/crazy'
+    Page['foo/bar/hello/there/crazy/person-123'].filename.should == 'person-123.markdown'
+    Page['foo/bar/hello/there/crazy/person-123'].path.should include('/crazy/person-123.markdown')
+    
+    Page.first(:name => 'person-123').name.should     == 'person-123'
+    Page.first(:name => 'person-123').filename.should == 'person-123.markdown'
+    Page.first(:name => 'person-123').path.should include('/crazy/person-123.markdown')
+  end
+
+  describe 'Caching' do
+
+    it 'should be easy to give it a place to cache pages (standard get/set cache)'
+
+    it 'should be able to clear the cache'
+
+    it 'should clear the cache when the Page.dir is changed'
+
+  end
 
 end
