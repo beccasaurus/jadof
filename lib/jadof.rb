@@ -7,6 +7,13 @@ module JADOF
     # The root directory that pages are loaded from
     attr_accessor :dir
 
+    # When dir is set, we save it as an expanded path.
+    # We also clear the cache (if it's enabled)
+    def dir= value
+      cache.clear if cache
+      @dir = File.expand_path value
+    end
+
     # This can be set to a standard cache object and, if it is set, 
     # all pages will be cached so they don't have to be re-opened 
     # and we don't have to look for the files.
@@ -19,24 +26,29 @@ module JADOF
     #
     attr_accessor :cache
 
+    def cache_for key, &block
+      return block.call unless cache
+
+      from_cache = cache.get(key)
+      unless from_cache
+        from_cache = block.call
+        cache.set(key, from_cache)
+      end
+      from_cache
+    end
+
     # Get a Page by name
     def get name
-      matches = Dir[ File.join dir, "#{ name }.*" ]
-      case matches.length
-      when 0
-        nil
-      when 1
-        from_path matches.first
-      else
-        raise "Ambiguous page name #{ name } matches: #{ matches.inspect }"
-      end
+      first :full_name => name.to_s
     end
 
     alias [] get
 
     # Get all Pages in Page.dir
     def all
-      Dir[ File.join(dir, "**/*") ].reject {|path| File.directory? path }.map {|path| from_path(path) }
+      cache_for 'all' do
+        Dir[ File.join(dir, "**/*") ].reject {|path| File.directory?(path) }.map {|path| from_path(path) }
+      end
     end
 
     # Returns the count of all Pages
@@ -89,10 +101,16 @@ module JADOF
     include IndifferentVariableHash
 
     # These are the default attributes that all pages have
+    #
+    # TODO add comments for each accessor describing how it is used
     attr_accessor :name, :path, :filename, :body, :parent
 
     def initialize options = nil
       options.each {|attribute, value| send "#{attribute}=", value } if options
+    end
+
+    def full_name
+      parent == '' ? name : File.join(parent, name)
     end
   end
 

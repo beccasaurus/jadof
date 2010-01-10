@@ -71,7 +71,7 @@ describe Page do
     create_page 'foo.markdown'
 
     Page[:foo].should_not be_nil
-    Page[:foo].path.should == File.dirname(__FILE__) + '/pages/foo.markdown'
+    Page[:foo].path.should == File.expand_path(File.dirname(__FILE__) + '/pages/foo.markdown')
   end
 
   it 'has a name (the name of the file, without extensions)' do
@@ -159,9 +159,10 @@ describe Page do
 
     create_page 'foo/bar.markdown'
 
-    Page['foo/bar'].name.should     == 'bar'
-    Page['foo/bar'].parent.should   == 'foo'
-    Page['foo/bar'].filename.should == 'bar.markdown'
+    Page['foo/bar'].name.should      == 'bar'
+    Page['foo/bar'].full_name.should == 'foo/bar'
+    Page['foo/bar'].parent.should    == 'foo'
+    Page['foo/bar'].filename.should  == 'bar.markdown'
     Page['foo/bar'].path.should include('foo/bar.markdown')
     
     Page.first(:name => 'bar').name.should     == 'bar'
@@ -172,9 +173,10 @@ describe Page do
   it 'supports n levels of sub-directories' do
     create_page 'foo/bar/hello/there/crazy/person-123.markdown'
 
-    Page['foo/bar/hello/there/crazy/person-123'].name.should     == 'person-123'
-    Page['foo/bar/hello/there/crazy/person-123'].parent.should   == 'foo/bar/hello/there/crazy'
-    Page['foo/bar/hello/there/crazy/person-123'].filename.should == 'person-123.markdown'
+    Page['foo/bar/hello/there/crazy/person-123'].name.should      == 'person-123'
+    Page['foo/bar/hello/there/crazy/person-123'].full_name.should == 'foo/bar/hello/there/crazy/person-123'
+    Page['foo/bar/hello/there/crazy/person-123'].parent.should    == 'foo/bar/hello/there/crazy'
+    Page['foo/bar/hello/there/crazy/person-123'].filename.should  == 'person-123.markdown'
     Page['foo/bar/hello/there/crazy/person-123'].path.should include('/crazy/person-123.markdown')
     
     Page.first(:name => 'person-123').name.should     == 'person-123'
@@ -192,17 +194,61 @@ describe Page do
       create_page 'foo.markdown'
       path = File.join File.dirname(__FILE__), 'pages', 'foo.markdown'
 
-      File.should_receive(:read).with(path).once # only once!
+      File.should_receive(:read).with(File.expand_path(path)).once.and_return('') # only once!
 
       Page[:foo]
       Page[:foo]
     end
 
-    it 'with the cache enabled, Dir[] should only look for files once'
+    it 'with the cache enabled, Dir[] should only look for files once' do
+      create_page 'foo.markdown'
+      create_page 'bar.markdown'
 
-    it 'should be able to clear the cache'
+      dir = File.dirname(__FILE__)
+      Dir.should_receive(:[]).once.and_return(["#{dir}/pages/bar.markdown", "#{dir}/pages/foo.markdown"])
+      File.should_receive(:read).twice.and_return('')
 
-    it 'should clear the cache when the Page.dir is changed'
+      Page.all
+      Page.all # calls everyhing again if caching is disabled (Page.cache is nil or false)
+    end
+
+    it 'with the cache disabled, Dir[] should only look for files more than once' do
+      Page.cache = false
+
+      create_page 'foo.markdown'
+      create_page 'bar.markdown'
+
+      dir = File.dirname(__FILE__)
+      Dir.should_receive(:[]).twice.and_return(["#{dir}/pages/bar.markdown", "#{dir}/pages/foo.markdown"])
+      File.should_receive(:read).exactly(4).times.and_return('')
+
+      Page.all
+      Page.all # calls everyhing again if caching is disabled (Page.cache is nil or false)
+    end
+
+    it 'should be able to clear the cache' do
+      Page.cache.get('all').should be_nil
+      Page.all
+      Page.cache.get('all').should_not be_nil
+      
+      Page.cache.clear
+
+      Page.cache.get('all').should be_nil
+      Page.all
+      Page.cache.get('all').should_not be_nil
+    end
+
+    it 'should clear the cache when the Page.dir is changed' do
+      Page.cache.get('all').should be_nil
+      Page.all
+      Page.cache.get('all').should_not be_nil
+      
+      Page.dir = '/tmp' # different directory
+
+      Page.cache.get('all').should be_nil
+      Page.all
+      Page.cache.get('all').should_not be_nil
+    end
 
   end
 
