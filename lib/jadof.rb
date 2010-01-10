@@ -1,3 +1,5 @@
+$LOAD_PATH.unshift File.dirname(__FILE__)
+
 require 'indifferent-variable-hash'
 
 module JADOF
