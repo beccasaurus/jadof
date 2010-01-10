@@ -16,6 +16,14 @@ module JADOF
       @dir = File.expand_path value
     end
 
+    # A Hash of available formatters.  The key is used to match 
+    # a given file extension and the value should be something 
+    # that you can #call (like a lambda) with text which returns 
+    # the formatted text.
+    attr_accessor :formatters
+
+    @formatters = {}
+
     # This can be set to a standard cache object and, if it is set, 
     # all pages will be cached so they don't have to be re-opened 
     # and we don't have to look for the files.
@@ -96,6 +104,20 @@ module JADOF
       Page.new variables
     end
 
+    # Using the #filename of the page given and available Page.formatters, 
+    # we render and return the page #body.
+    def to_html page
+      html = page.body
+
+      page.filename.scan(/\.([^\.]+)/).reverse.each do |match| # [ ["markdown"], ["erb"] ]
+        if formatter = Page.formatters[ match.first ]
+          html = formatter.call(html)
+        end
+      end
+
+      html
+    end
+
   end
 
   class Page
@@ -113,6 +135,10 @@ module JADOF
 
     def full_name
       parent == '' ? name : File.join(parent, name)
+    end
+
+    def to_html
+      self.class.to_html self
     end
   end
 

@@ -22,8 +22,10 @@
 #
 require 'rubygems'
 require 'spec'
-require 'fileutils'
-require 'hash-cache'
+require 'fileutils'  # for creating/deleting directories for fake pages
+require 'hash-cache' # for testing caching
+require 'maruku'     # for testing rendering
+require 'erb'        # for testing rendering
 require File.dirname(__FILE__) + '/../jadof' unless defined? JADOF
 require File.dirname(__FILE__) + '/spec/helpers'
 require File.dirname(__FILE__) + '/spec/examples_for_page'

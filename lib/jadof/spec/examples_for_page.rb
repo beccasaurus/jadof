@@ -167,6 +167,47 @@ shared_examples_for "JADOF Page" do
     JADOF::Page.first(:name => 'person-123').path.should include('/crazy/person-123.markdown')
   end
 
+  describe 'Rendering' do
+
+    before do
+      JADOF::Page.formatters = {}
+    end
+
+    it 'should render plain text if formatter not found for file extension' do
+      create_page 'foo.markdown', %{
+        **Hello World!**
+      }
+
+      JADOF::Page[:foo].to_html.should == '**Hello World!**'
+    end
+    
+    it 'should render using formatter if found for file extension' do
+      JADOF::Page.formatters['markdown'] = lambda {|text| Maruku.new(text).to_html }
+
+      create_page 'foo.markdown', %{
+        **Hello World!**
+      }
+
+      JADOF::Page[:foo].to_html.should == '<p><strong>Hello World!</strong></p>'
+    end
+
+    it 'should support multiple file extensions, eg. foo.markdown.erb (erb renders first, then markdown)' do
+      JADOF::Page.formatters['markdown'] = lambda {|text| Maruku.new(text).to_html }
+
+      create_page 'foo.markdown.erb', %{
+        <%= '*' * 2 %>Hello World!<%= '*' * 2 %>
+      }
+
+      JADOF::Page[:foo].to_html.should == 
+        '<p>&lt;%= &#8217;<em>&#8217;</em> 2 %&gt;Hello World!&lt;%= &#8217;<em>&#8217;</em> 2 %&gt;</p>'
+
+
+      JADOF::Page.formatters['erb'] = lambda {|text| ERB.new(text).result }
+      JADOF::Page[:foo].to_html.should == '<p><strong>Hello World!</strong></p>'
+    end
+
+  end
+
   describe 'Caching' do
 
     before do
