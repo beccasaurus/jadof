@@ -4,7 +4,7 @@ require 'fileutils'
 require 'hash-cache'
 
 # Helper for creating page files in the specs, at spec/pages/
-def create_page filename, body = ''
+def create_page filename, body = '', page_dir = Page.dir
   body.sub!("\n", '')     if body.lines.first == "\n" # get rid of first empty line
   body.sub!(/\n\s+$/, '') if body.lines.count > 0     # get rid of last  empty line
 
@@ -17,7 +17,7 @@ def create_page filename, body = ''
 
   body ||= '' # if it's nil for some reason, make it an empty string
 
-  path = File.join(Page.dir, filename)
+  path = File.join(page_dir, filename)
   FileUtils.mkdir_p File.dirname(path)
   File.open(path, 'w'){|f| f << body }
 end
@@ -58,7 +58,20 @@ describe Page do
     Page[:foo].body.should == "it should fix\n  the spaces\nfor me"
   end
 
-  it 'can set the Page.dir to specify the directory to fetch pages from'
+  it 'can set the Page.dir to specify the directory to fetch pages from' do
+    dir1, dir2 = Page.dir, File.dirname(__FILE__) + '/more_pages'
+
+    create_page 'foo.markdown', 'hello world', dir1
+    create_page 'bar.markdown', 'hello world', dir2
+
+    Page[:foo].should_not be_nil
+    Page[:bar].should     be_nil
+
+    Page.dir = dir2
+
+    Page[:foo].should     be_nil
+    Page[:bar].should_not be_nil
+  end
 
   it 'has a filename (the actual filename, without a path)' do
     create_page 'foo.markdown'
