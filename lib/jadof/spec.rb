@@ -29,3 +29,4 @@ require 'erb'        # for testing rendering
 require File.dirname(__FILE__) + '/../jadof' unless defined? JADOF
 require File.dirname(__FILE__) + '/spec/helpers'
 require File.dirname(__FILE__) + '/spec/examples_for_page'
+require File.dirname(__FILE__) + '/spec/examples_for_post'
