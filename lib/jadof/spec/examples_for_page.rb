@@ -85,6 +85,16 @@ shared_examples_for "JADOF Page" do
     JADOF::Page.all.length.should == 1
   end
 
+  it 'can return #first and #last page' do
+    create_page 'foo.markdown'
+    create_page 'bar.markdown'
+    
+    JADOF::Page.first.should == JADOF::Page.all.first
+    JADOF::Page.last.should  == JADOF::Page.all.last
+
+    JADOF::Page.first.should_not == JADOF::Page.last
+  end
+
   it 'can get a page by name' do
     JADOF::Page.get(:foo).should be_nil
     JADOF::Page[:foo].should     be_nil
@@ -93,47 +103,6 @@ shared_examples_for "JADOF Page" do
 
     JADOF::Page.get(:foo).should_not be_nil
     JADOF::Page[:foo].should_not     be_nil
-  end
-
-  it 'can add any kind of arbitrary data to a page via YAML' do
-    create_page 'foo.markdown'
-    JADOF::Page[:foo].foo.should be_nil # JADOF::Page's don't raise NoMethodError's
-
-    create_page 'foo.markdown', %{
-      ---
-      foo: bar
-      ---
-      Hello World!
-    }
-
-    JADOF::Page[:foo].foo.should == 'bar' # got value from YAML
-  end
-
-  it 'can get a page by the value of any arbitrary data (from the YAML)' do
-    create_page 'foo.markdown', %{
-      ---
-      foo: bar
-      ---
-      Hello World!
-    }
-
-    JADOF::Page.first(:foo => 'not bar').should     be_nil
-    JADOF::Page.first(:foo => 'bar'    ).should_not be_nil
-    JADOF::Page.first(:foo => 'bar'    ).foo.should == 'bar'
-  end
-
-  it 'can get a page by *multiple* arbitrary conditions' do
-    create_page 'foo.markdown', %{
-      ---
-      foo: bar
-      ---
-      Hello World!
-    }
-
-    JADOF::Page.where(:foo => 'bar', :name => 'not foo').should be_empty
-    JADOF::Page.where(:foo => 'not bar', :name => 'foo').should be_empty
-    JADOF::Page.where(:foo => 'bar', :name => 'foo').should_not be_empty
-    JADOF::Page.where(:foo => 'bar', :name => 'foo').first.name.should == 'foo'
   end
 
   it 'supports 1 level of sub-directories' do
@@ -165,6 +134,67 @@ shared_examples_for "JADOF Page" do
     JADOF::Page.first(:name => 'person-123').name.should     == 'person-123'
     JADOF::Page.first(:name => 'person-123').filename.should == 'person-123.markdown'
     JADOF::Page.first(:name => 'person-123').path.should include('/crazy/person-123.markdown')
+  end
+
+  it 'implements #to_s (defaults to #full_name)' do
+    create_page 'hi.markdown'
+    create_page 'foo/bar/hello/there/crazy/person-123.markdown'
+    
+    JADOF::Page[:hi].to_s.should == 'hi'
+    JADOF::Page.first(:name => 'person-123').to_s.should == 'foo/bar/hello/there/crazy/person-123'
+  end
+
+  it 'implements #to_param (defaults to #full_name)' do
+    create_page 'hi.markdown'
+    create_page 'foo/bar/hello/there/crazy/person-123.markdown'
+
+    JADOF::Page[:hi].to_param.should == 'hi'
+    JADOF::Page.first(:name => 'person-123').to_param.should == 'foo/bar/hello/there/crazy/person-123'
+  end
+
+  describe 'YAML header' do
+
+    it 'can add any kind of arbitrary data to a page via YAML' do
+      create_page 'foo.markdown'
+      JADOF::Page[:foo].foo.should be_nil # JADOF::Page's don't raise NoMethodError's
+
+      create_page 'foo.markdown', %{
+        ---
+        foo: bar
+        ---
+        Hello World!
+      }
+
+      JADOF::Page[:foo].foo.should == 'bar' # got value from YAML
+    end
+
+    it 'can get a page by the value of any arbitrary data (from the YAML)' do
+      create_page 'foo.markdown', %{
+        ---
+        foo: bar
+        ---
+        Hello World!
+      }
+
+      JADOF::Page.first(:foo => 'not bar').should     be_nil
+      JADOF::Page.first(:foo => 'bar'    ).should_not be_nil
+      JADOF::Page.first(:foo => 'bar'    ).foo.should == 'bar'
+    end
+
+    it 'can get a page by *multiple* arbitrary conditions' do
+      create_page 'foo.markdown', %{
+        ---
+        foo: bar
+        ---
+        Hello World!
+      }
+
+      JADOF::Page.where(:foo => 'bar', :name => 'not foo').should be_empty
+      JADOF::Page.where(:foo => 'not bar', :name => 'foo').should be_empty
+      JADOF::Page.where(:foo => 'bar', :name => 'foo').should_not be_empty
+      JADOF::Page.where(:foo => 'bar', :name => 'foo').first.name.should == 'foo'
+    end
+
   end
 
   describe 'Rendering' do

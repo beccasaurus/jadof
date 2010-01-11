@@ -71,6 +71,22 @@ module JADOF #:nodoc:
       self.class.to_html self
     end
 
+    # @return [true, false] If 2 pages have the same system path, they're the same.
+    def == other_page
+      return false unless other_page.is_a? Page
+      return other_page.path == path
+    end
+
+    # @return [String] This page as a string.  Defaults to {#full_name}.
+    def to_s
+      full_name
+    end
+
+    # @return [String] A param representation of this page for us in web applications.  Defaults to {#full_name}.
+    def to_param
+      full_name
+    end
+
     class << self
 
       # @return [String] The root directory that pages are loaded from.  Defaults to "./pages/"
@@ -135,14 +151,23 @@ module JADOF #:nodoc:
       all.length
     end
 
+    # @return [Page, nil] Returns the last Page
+    def self.last
+      all.last
+    end
+
     # @return [Array(Page)] Gets pages given some simple conditions (only == equality is supported)
     def self.where conditions
       all.select { |page| matches_conditions? page, conditions }
     end
 
     # @return [Page, nil] Gets a page given some simple conditions
-    def self.first conditions
-      all.find { |page| matches_conditions? page, conditions }
+    def self.first conditions = nil
+      if conditions
+        all.find { |page| matches_conditions? page, conditions }
+      else
+        all.first
+      end
     end
 
     # @return [Page] Loads a Page from a given path to a file
