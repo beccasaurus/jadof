@@ -1,316 +1,322 @@
 shared_examples_for "JADOF Page" do
 
-  before do
-    @root_page_directory ||= './jadof_spec_pages/'
-    JADOF::Page.dir = File.join(@root_page_directory, 'pages')
-    delete_root_page_directory
-  end
-
-  after :all do
-    delete_root_page_directory
-  end
-
-  it '#create_page works as expected for creating fake pages for these specs' do
-    path = File.join(@root_page_directory, '/pages/foo.markdown')
-    File.file?(path).should be_false
-
-    create_page 'foo.markdown'
-
-    File.file?(path).should be_true
-    JADOF::Page[:foo].body.should == ''
-
-    create_page 'foo.markdown', %{
-      it should fix
-        the spaces
-      for me
-    }
-
-    JADOF::Page[:foo].body.should == "it should fix\n  the spaces\nfor me"
-  end
-
-  it 'can set the JADOF::Page.dir to specify the directory to fetch pages from' do
-    dir1, dir2 = JADOF::Page.dir, File.join(@root_page_directory, '/more_pages')
-
-    create_page 'foo.markdown', 'hello world', dir1
-    create_page 'bar.markdown', 'hello world', dir2
-
-    JADOF::Page[:foo].should_not be_nil
-    JADOF::Page[:bar].should     be_nil
-
-    JADOF::Page.dir = dir2
-
-    JADOF::Page[:foo].should     be_nil
-    JADOF::Page[:bar].should_not be_nil
-  end
-
-  it 'has a filename (the actual filename, without a path)' do
-    create_page 'foo.markdown'
-
-    JADOF::Page[:foo].should_not be_nil
-    JADOF::Page[:foo].filename.should == 'foo.markdown'
-  end
-
-  it 'has a path (the full system path to the file)' do
-    create_page 'foo.markdown'
-
-    JADOF::Page[:foo].should_not be_nil
-    JADOF::Page[:foo].path.should == File.expand_path(File.join(@root_page_directory, '/pages/foo.markdown'))
-  end
-
-  it 'has a name (the name of the file, without extensions)' do
-    create_page 'foo.markdown'
-
-    JADOF::Page[:foo].should_not be_nil
-    JADOF::Page[:foo].name.should == 'foo'
-  end
-
-  it 'has a body (the content of the file)' do
-    create_page 'foo.markdown'
-    JADOF::Page[:foo].body.should == ''
-
-    create_page 'foo.markdown', %{
-      Hello World!
-    }
-
-    JADOF::Page[:foo].body.strip.should == 'Hello World!'
-  end
-
-  it 'can return all pages' do
-    JADOF::Page.count.should      == 0
-    JADOF::Page.all.length.should == 0
-
-    create_page 'foo.markdown'
-    
-    JADOF::Page.count.should      == 1
-    JADOF::Page.all.length.should == 1
-  end
-
-  it 'can return #first and #last page' do
-    create_page 'foo.markdown'
-    create_page 'bar.markdown'
-    
-    JADOF::Page.first.should == JADOF::Page.all.first
-    JADOF::Page.last.should  == JADOF::Page.all.last
-
-    JADOF::Page.first.should_not == JADOF::Page.last
-  end
-
-  it 'can get a page by name' do
-    JADOF::Page.get(:foo).should be_nil
-    JADOF::Page[:foo].should     be_nil
-
-    create_page 'foo.markdown'
-
-    JADOF::Page.get(:foo).should_not be_nil
-    JADOF::Page[:foo].should_not     be_nil
-  end
-
-  it 'supports 1 level of sub-directories' do
-    create_page 'hi.markdown'
-    JADOF::Page['hi'].parent.should == ''
-
-    create_page 'foo/bar.markdown'
-
-    JADOF::Page['foo/bar'].name.should      == 'bar'
-    JADOF::Page['foo/bar'].full_name.should == 'foo/bar'
-    JADOF::Page['foo/bar'].parent.should    == 'foo'
-    JADOF::Page['foo/bar'].filename.should  == 'bar.markdown'
-    JADOF::Page['foo/bar'].path.should include('foo/bar.markdown')
-    
-    JADOF::Page.first(:name => 'bar').name.should     == 'bar'
-    JADOF::Page.first(:name => 'bar').filename.should == 'bar.markdown'
-    JADOF::Page.first(:name => 'bar').path.should include('foo/bar.markdown')
-  end
-
-  it 'supports n levels of sub-directories' do
-    create_page 'foo/bar/hello/there/crazy/person-123.markdown'
-
-    JADOF::Page['foo/bar/hello/there/crazy/person-123'].name.should      == 'person-123'
-    JADOF::Page['foo/bar/hello/there/crazy/person-123'].full_name.should == 'foo/bar/hello/there/crazy/person-123'
-    JADOF::Page['foo/bar/hello/there/crazy/person-123'].parent.should    == 'foo/bar/hello/there/crazy'
-    JADOF::Page['foo/bar/hello/there/crazy/person-123'].filename.should  == 'person-123.markdown'
-    JADOF::Page['foo/bar/hello/there/crazy/person-123'].path.should include('/crazy/person-123.markdown')
-    
-    JADOF::Page.first(:name => 'person-123').name.should     == 'person-123'
-    JADOF::Page.first(:name => 'person-123').filename.should == 'person-123.markdown'
-    JADOF::Page.first(:name => 'person-123').path.should include('/crazy/person-123.markdown')
-  end
-
-  it 'implements #to_s (defaults to #full_name)' do
-    create_page 'hi.markdown'
-    create_page 'foo/bar/hello/there/crazy/person-123.markdown'
-    
-    JADOF::Page[:hi].to_s.should == 'hi'
-    JADOF::Page.first(:name => 'person-123').to_s.should == 'foo/bar/hello/there/crazy/person-123'
-  end
-
-  it 'implements #to_param (defaults to #full_name)' do
-    create_page 'hi.markdown'
-    create_page 'foo/bar/hello/there/crazy/person-123.markdown'
-
-    JADOF::Page[:hi].to_param.should == 'hi'
-    JADOF::Page.first(:name => 'person-123').to_param.should == 'foo/bar/hello/there/crazy/person-123'
-  end
-
-  describe 'YAML header' do
-
-    it 'can add any kind of arbitrary data to a page via YAML' do
-      create_page 'foo.markdown'
-      JADOF::Page[:foo].foo.should be_nil # JADOF::Page's don't raise NoMethodError's
-
-      create_page 'foo.markdown', %{
-        ---
-        foo: bar
-        ---
-        Hello World!
-      }
-
-      JADOF::Page[:foo].foo.should == 'bar' # got value from YAML
-    end
-
-    it 'can get a page by the value of any arbitrary data (from the YAML)' do
-      create_page 'foo.markdown', %{
-        ---
-        foo: bar
-        ---
-        Hello World!
-      }
-
-      JADOF::Page.first(:foo => 'not bar').should     be_nil
-      JADOF::Page.first(:foo => 'bar'    ).should_not be_nil
-      JADOF::Page.first(:foo => 'bar'    ).foo.should == 'bar'
-    end
-
-    it 'can get a page by *multiple* arbitrary conditions' do
-      create_page 'foo.markdown', %{
-        ---
-        foo: bar
-        ---
-        Hello World!
-      }
-
-      JADOF::Page.where(:foo => 'bar', :name => 'not foo').should be_empty
-      JADOF::Page.where(:foo => 'not bar', :name => 'foo').should be_empty
-      JADOF::Page.where(:foo => 'bar', :name => 'foo').should_not be_empty
-      JADOF::Page.where(:foo => 'bar', :name => 'foo').first.name.should == 'foo'
-    end
-
-  end
-
-  describe 'Rendering' do
+  describe ':: Behaves like JADOF Page' do
 
     before do
-      JADOF::Page.formatters = {}
+      @jadof_page_class ||= JADOF::Page # override this in your specs to test a different class!
+
+      @root_page_directory ||= './jadof_spec_pages/'
+      @jadof_page_class.dir = File.join(@root_page_directory, 'pages')
+      delete_root_page_directory
     end
 
-    it 'should render plain text if formatter not found for file extension' do
-      create_page 'foo.markdown', %{
-        **Hello World!**
-      }
-
-      JADOF::Page[:foo].to_html.should == '**Hello World!**'
-    end
-    
-    it 'should render using formatter if found for file extension' do
-      JADOF::Page.formatters['markdown'] = lambda {|text| Maruku.new(text).to_html }
-
-      create_page 'foo.markdown', %{
-        **Hello World!**
-      }
-
-      JADOF::Page[:foo].to_html.should == '<p><strong>Hello World!</strong></p>'
+    after :all do
+      delete_root_page_directory
     end
 
-    it 'should support multiple file extensions, eg. foo.markdown.erb (erb renders first, then markdown)' do
-      JADOF::Page.formatters['markdown'] = lambda {|text| Maruku.new(text).to_html }
+    it '#create_page works as expected for creating fake pages for these specs' do
+      path = File.join(@jadof_page_class.dir, '/foo.markdown')
+      File.file?(path).should be_false
 
-      create_page 'foo.markdown.erb', %{
-        <%= '*' * 2 %>Hello World!<%= '*' * 2 %>
-      }
-
-      JADOF::Page[:foo].to_html.should == 
-        '<p>&lt;%= &#8217;<em>&#8217;</em> 2 %&gt;Hello World!&lt;%= &#8217;<em>&#8217;</em> 2 %&gt;</p>'
-
-
-      JADOF::Page.formatters['erb'] = lambda {|text| ERB.new(text).result }
-      JADOF::Page[:foo].to_html.should == '<p><strong>Hello World!</strong></p>'
-    end
-
-    it 'should have markdown and erb out of the box' do
-      create_page 'foo.markdown.erb', %{
-        <%= '*' * 2 %>Hello World!<%= '*' * 2 %>
-      }
-
-      JADOF::Page.formatters = JADOF::Page::DEFAULT_FORMATTERS
-      JADOF::Page[:foo].to_html.should == '<p><strong>Hello World!</strong></p>'
-    end
-
-  end
-
-  describe 'Caching' do
-
-    before do
-      JADOF::Page.cache = Hash::Cache.new # Hash that has #get(k) and #set(k,v) methods and #clear
-    end
-
-    it 'with the cache enabled, files should only be #read once' do
       create_page 'foo.markdown'
-      path = File.join @root_page_directory, 'pages', 'foo.markdown'
 
-      File.should_receive(:read).with(File.expand_path(path)).once.and_return('') # only once!
+      File.file?(path).should be_true
+      @jadof_page_class[:foo].body.should == ''
 
-      JADOF::Page[:foo]
-      JADOF::Page[:foo]
+      create_page 'foo.markdown', %{
+        it should fix
+          the spaces
+        for me
+      }
+
+      @jadof_page_class[:foo].body.should == "it should fix\n  the spaces\nfor me"
     end
 
-    it 'with the cache enabled, Dir[] should only look for files once' do
+    it 'can set the @jadof_page_class.dir to specify the directory to fetch pages from' do
+      dir1, dir2 = @jadof_page_class.dir, File.join(@root_page_directory, '/more_pages')
+
+      create_page 'foo.markdown', 'hello world', dir1
+      create_page 'bar.markdown', 'hello world', dir2
+
+      @jadof_page_class[:foo].should_not be_nil
+      @jadof_page_class[:bar].should     be_nil
+
+      @jadof_page_class.dir = dir2
+
+      @jadof_page_class[:foo].should     be_nil
+      @jadof_page_class[:bar].should_not be_nil
+    end
+
+    it 'has a filename (the actual filename, without a path)' do
+      create_page 'foo.markdown'
+
+      @jadof_page_class[:foo].should_not be_nil
+      @jadof_page_class[:foo].filename.should == 'foo.markdown'
+    end
+
+    it 'has a path (the full system path to the file)' do
+      create_page 'foo.markdown'
+
+      @jadof_page_class[:foo].should_not be_nil
+      @jadof_page_class[:foo].path.should == File.expand_path(File.join(@jadof_page_class.dir, '/foo.markdown'))
+    end
+
+    it 'has a name (the name of the file, without extensions)' do
+      create_page 'foo.markdown'
+
+      @jadof_page_class[:foo].should_not be_nil
+      @jadof_page_class[:foo].name.should == 'foo'
+    end
+
+    it 'has a body (the content of the file)' do
+      create_page 'foo.markdown'
+      @jadof_page_class[:foo].body.should == ''
+
+      create_page 'foo.markdown', %{
+        Hello World!
+      }
+
+      @jadof_page_class[:foo].body.strip.should == 'Hello World!'
+    end
+
+    it 'can return all pages' do
+      @jadof_page_class.count.should      == 0
+      @jadof_page_class.all.length.should == 0
+
+      create_page 'foo.markdown'
+      
+      @jadof_page_class.count.should      == 1
+      @jadof_page_class.all.length.should == 1
+    end
+
+    it 'can return #first and #last page' do
       create_page 'foo.markdown'
       create_page 'bar.markdown'
+      
+      @jadof_page_class.first.should == @jadof_page_class.all.first
+      @jadof_page_class.last.should  == @jadof_page_class.all.last
 
-      dir = @root_page_directory
-      Dir.should_receive(:[]).once.and_return([File.join(dir, '/pages/bar.markdown'), File.join(dir, '/pages/foo.markdown')])
-      File.should_receive(:read).twice.and_return('')
-
-      JADOF::Page.all
-      JADOF::Page.all # calls everyhing again if caching is disabled (JADOF::Page.cache is nil or false)
+      @jadof_page_class.first.should_not == @jadof_page_class.last
     end
 
-    it 'with the cache disabled, Dir[] should only look for files more than once' do
-      JADOF::Page.cache = false
+    it 'can get a page by name' do
+      @jadof_page_class.get(:foo).should be_nil
+      @jadof_page_class[:foo].should     be_nil
 
       create_page 'foo.markdown'
-      create_page 'bar.markdown'
 
-      dir = @root_page_directory
-      Dir.should_receive(:[]).twice.and_return([File.join(dir, '/pages/bar.markdown'), File.join(dir, '/pages/foo.markdown')])
-      File.should_receive(:read).exactly(4).times.and_return('')
-
-      JADOF::Page.all
-      JADOF::Page.all # calls everyhing again if caching is disabled (JADOF::Page.cache is nil or false)
+      @jadof_page_class.get(:foo).should_not be_nil
+      @jadof_page_class[:foo].should_not     be_nil
     end
 
-    it 'should be able to clear the cache' do
-      JADOF::Page.cache.get('all').should be_nil
-      JADOF::Page.all
-      JADOF::Page.cache.get('all').should_not be_nil
-      
-      JADOF::Page.cache.clear
+    it 'supports 1 level of sub-directories' do
+      create_page 'hi.markdown'
+      @jadof_page_class['hi'].parent.should == ''
 
-      JADOF::Page.cache.get('all').should be_nil
-      JADOF::Page.all
-      JADOF::Page.cache.get('all').should_not be_nil
+      create_page 'foo/bar.markdown'
+
+      @jadof_page_class['foo/bar'].name.should      == 'bar'
+      @jadof_page_class['foo/bar'].full_name.should == 'foo/bar'
+      @jadof_page_class['foo/bar'].parent.should    == 'foo'
+      @jadof_page_class['foo/bar'].filename.should  == 'bar.markdown'
+      @jadof_page_class['foo/bar'].path.should include('foo/bar.markdown')
+      
+      @jadof_page_class.first(:name => 'bar').name.should     == 'bar'
+      @jadof_page_class.first(:name => 'bar').filename.should == 'bar.markdown'
+      @jadof_page_class.first(:name => 'bar').path.should include('foo/bar.markdown')
     end
 
-    it 'should clear the cache when the JADOF::Page.dir is changed' do
-      JADOF::Page.cache.get('all').should be_nil
-      JADOF::Page.all
-      JADOF::Page.cache.get('all').should_not be_nil
-      
-      JADOF::Page.dir = File.join(@root_page_directory, 'different-directory')
+    it 'supports n levels of sub-directories' do
+      create_page 'foo/bar/hello/there/crazy/person-123.markdown'
 
-      JADOF::Page.cache.get('all').should be_nil
-      JADOF::Page.all
-      JADOF::Page.cache.get('all').should_not be_nil
+      @jadof_page_class['foo/bar/hello/there/crazy/person-123'].name.should      == 'person-123'
+      @jadof_page_class['foo/bar/hello/there/crazy/person-123'].full_name.should == 'foo/bar/hello/there/crazy/person-123'
+      @jadof_page_class['foo/bar/hello/there/crazy/person-123'].parent.should    == 'foo/bar/hello/there/crazy'
+      @jadof_page_class['foo/bar/hello/there/crazy/person-123'].filename.should  == 'person-123.markdown'
+      @jadof_page_class['foo/bar/hello/there/crazy/person-123'].path.should include('/crazy/person-123.markdown')
+      
+      @jadof_page_class.first(:name => 'person-123').name.should     == 'person-123'
+      @jadof_page_class.first(:name => 'person-123').filename.should == 'person-123.markdown'
+      @jadof_page_class.first(:name => 'person-123').path.should include('/crazy/person-123.markdown')
+    end
+
+    it 'implements #to_s (defaults to #full_name)' do
+      create_page 'hi.markdown'
+      create_page 'foo/bar/hello/there/crazy/person-123.markdown'
+      
+      @jadof_page_class[:hi].to_s.should == 'hi'
+      @jadof_page_class.first(:name => 'person-123').to_s.should == 'foo/bar/hello/there/crazy/person-123'
+    end
+
+    it 'implements #to_param (defaults to #full_name)' do
+      create_page 'hi.markdown'
+      create_page 'foo/bar/hello/there/crazy/person-123.markdown'
+
+      @jadof_page_class[:hi].to_param.should == 'hi'
+      @jadof_page_class.first(:name => 'person-123').to_param.should == 'foo/bar/hello/there/crazy/person-123'
+    end
+
+    describe ':: YAML header' do
+
+      it 'can add any kind of arbitrary data to a page via YAML' do
+        create_page 'foo.markdown'
+        @jadof_page_class[:foo].foo.should be_nil # @jadof_page_class's don't raise NoMethodError's
+
+        create_page 'foo.markdown', %{
+          ---
+          foo: bar
+          ---
+          Hello World!
+        }
+
+        @jadof_page_class[:foo].foo.should == 'bar' # got value from YAML
+      end
+
+      it 'can get a page by the value of any arbitrary data (from the YAML)' do
+        create_page 'foo.markdown', %{
+          ---
+          foo: bar
+          ---
+          Hello World!
+        }
+
+        @jadof_page_class.first(:foo => 'not bar').should     be_nil
+        @jadof_page_class.first(:foo => 'bar'    ).should_not be_nil
+        @jadof_page_class.first(:foo => 'bar'    ).foo.should == 'bar'
+      end
+
+      it 'can get a page by *multiple* arbitrary conditions' do
+        create_page 'foo.markdown', %{
+          ---
+          foo: bar
+          ---
+          Hello World!
+        }
+
+        @jadof_page_class.where(:foo => 'bar', :name => 'not foo').should be_empty
+        @jadof_page_class.where(:foo => 'not bar', :name => 'foo').should be_empty
+        @jadof_page_class.where(:foo => 'bar', :name => 'foo').should_not be_empty
+        @jadof_page_class.where(:foo => 'bar', :name => 'foo').first.name.should == 'foo'
+      end
+
+    end
+
+    describe ':: Rendering' do
+
+      before do
+        @jadof_page_class.formatters = {}
+      end
+
+      it 'should render plain text if formatter not found for file extension' do
+        create_page 'foo.markdown', %{
+          **Hello World!**
+        }
+
+        @jadof_page_class[:foo].to_html.should == '**Hello World!**'
+      end
+      
+      it 'should render using formatter if found for file extension' do
+        @jadof_page_class.formatters['markdown'] = lambda {|text| Maruku.new(text).to_html }
+
+        create_page 'foo.markdown', %{
+          **Hello World!**
+        }
+
+        @jadof_page_class[:foo].to_html.should == '<p><strong>Hello World!</strong></p>'
+      end
+
+      it 'should support multiple file extensions, eg. foo.markdown.erb (erb renders first, then markdown)' do
+        @jadof_page_class.formatters['markdown'] = lambda {|text| Maruku.new(text).to_html }
+
+        create_page 'foo.markdown.erb', %{
+          <%= '*' * 2 %>Hello World!<%= '*' * 2 %>
+        }
+
+        @jadof_page_class[:foo].to_html.should == 
+          '<p>&lt;%= &#8217;<em>&#8217;</em> 2 %&gt;Hello World!&lt;%= &#8217;<em>&#8217;</em> 2 %&gt;</p>'
+
+
+        @jadof_page_class.formatters['erb'] = lambda {|text| ERB.new(text).result }
+        @jadof_page_class[:foo].to_html.should == '<p><strong>Hello World!</strong></p>'
+      end
+
+      it 'should have markdown and erb out of the box' do
+        create_page 'foo.markdown.erb', %{
+          <%= '*' * 2 %>Hello World!<%= '*' * 2 %>
+        }
+
+        @jadof_page_class.formatters = @jadof_page_class::DEFAULT_FORMATTERS
+        @jadof_page_class[:foo].to_html.should == '<p><strong>Hello World!</strong></p>'
+      end
+
+    end
+
+    describe ':: Caching' do
+
+      before do
+        @jadof_page_class.cache = Hash::Cache.new # Hash that has #get(k) and #set(k,v) methods and #clear
+      end
+
+      it 'with the cache enabled, files should only be #read once' do
+        create_page 'foo.markdown'
+        path = File.join @jadof_page_class.dir, 'foo.markdown'
+
+        File.should_receive(:read).with(File.expand_path(path)).once.and_return('') # only once!
+
+        @jadof_page_class[:foo]
+        @jadof_page_class[:foo]
+      end
+
+      it 'with the cache enabled, Dir[] should only look for files once' do
+        create_page 'foo.markdown'
+        create_page 'bar.markdown'
+
+        dir = @root_page_directory
+        Dir.should_receive(:[]).once.and_return([File.join(dir, '/pages/bar.markdown'), File.join(dir, '/pages/foo.markdown')])
+        File.should_receive(:read).twice.and_return('')
+
+        @jadof_page_class.all
+        @jadof_page_class.all # calls everyhing again if caching is disabled (@jadof_page_class.cache is nil or false)
+      end
+
+      it 'with the cache disabled, Dir[] should only look for files more than once' do
+        @jadof_page_class.cache = false
+
+        create_page 'foo.markdown'
+        create_page 'bar.markdown'
+
+        dir = @root_page_directory
+        Dir.should_receive(:[]).twice.and_return([File.join(dir, '/pages/bar.markdown'), File.join(dir, '/pages/foo.markdown')])
+        File.should_receive(:read).exactly(4).times.and_return('')
+
+        @jadof_page_class.all
+        @jadof_page_class.all # calls everyhing again if caching is disabled (@jadof_page_class.cache is nil or false)
+      end
+
+      it 'should be able to clear the cache' do
+        @jadof_page_class.cache.get('all').should be_nil
+        @jadof_page_class.all
+        @jadof_page_class.cache.get('all').should_not be_nil
+        
+        @jadof_page_class.cache.clear
+
+        @jadof_page_class.cache.get('all').should be_nil
+        @jadof_page_class.all
+        @jadof_page_class.cache.get('all').should_not be_nil
+      end
+
+      it 'should clear the cache when the @jadof_page_class.dir is changed' do
+        @jadof_page_class.cache.get('all').should be_nil
+        @jadof_page_class.all
+        @jadof_page_class.cache.get('all').should_not be_nil
+        
+        @jadof_page_class.dir = File.join(@root_page_directory, 'different-directory')
+
+        @jadof_page_class.cache.get('all').should be_nil
+        @jadof_page_class.all
+        @jadof_page_class.cache.get('all').should_not be_nil
+      end
+
     end
 
   end

@@ -6,9 +6,19 @@ require File.dirname(__FILE__) + '/../lib/jadof/spec'
 #      work properly.
 
 describe JADOF::Page do
+  before do
+    @jadof_page_class = JADOF::Page
+  end
+
   it_should_behave_like "JADOF Page"
 end
 
 describe JADOF::Post do
+  before do
+    @jadof_page_class = JADOF::Post
+    @jadof_post_class = JADOF::Post
+  end
+
+  it_should_behave_like "JADOF Page"
   it_should_behave_like "JADOF Post"
 end

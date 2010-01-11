@@ -18,7 +18,7 @@ module JADOF #:nodoc:
     # @return [String] The conventional way to display blog 
     # post urls, eg. `2010/01/31/name-of-post`
     def to_param
-      "#{ date.strftime('%Y/%m/%d') }/#{ full_name }"
+      date ? "#{ date.strftime('%Y/%m/%d') }/#{ full_name }" : super
     end
 
   end

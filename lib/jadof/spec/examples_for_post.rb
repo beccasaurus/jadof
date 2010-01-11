@@ -1,29 +1,33 @@
 shared_examples_for "JADOF Post" do
 
-  before do
-    @root_page_directory ||= './jadof_spec_pages/'
-    JADOF::Post.dir = File.join(@root_page_directory, 'posts')
-    delete_root_page_directory
-  end
+  describe ':: Behaves like JADOF Post' do
 
-  after :all do
-    delete_root_page_directory
-  end
+    before do
+      @jadof_post_class ||= JADOF::Post # override this in your specs to test a different class!
 
-  it 'should behave like JADOF Page (need to add this in here!)'
+      @root_page_directory ||= './jadof_spec_pages/'
+      @jadof_post_class.dir = File.join(@root_page_directory, 'posts')
+      delete_root_page_directory
+    end
 
-  it 'it should have a date (which is used in to_param)' do
-    create_page 'foo.markdown', %{
-      ---
-      date: 01/31/2010
-      ---
-      
-      hello world
-    }, JADOF::Post.dir
+    after :all do
+      delete_root_page_directory
+    end
 
-    JADOF::Post.first.name.should     == 'foo'
-    JADOF::Post.first.to_s.should     == 'foo'
-    JADOF::Post.first.to_param.should == '2010/01/31/foo'
+    it 'it should have a date (which is used in to_param)' do
+      create_page 'foo.markdown', %{
+        ---
+        date: 01/31/2010
+        ---
+        
+        hello world
+      }, @jadof_post_class.dir
+
+      @jadof_post_class.first.name.should     == 'foo'
+      @jadof_post_class.first.to_s.should     == 'foo'
+      @jadof_post_class.first.to_param.should == '2010/01/31/foo'
+    end
+
   end
 
 end

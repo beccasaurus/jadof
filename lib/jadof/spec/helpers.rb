@@ -10,7 +10,7 @@
 #
 #   create_page 'foo.markdown', 'body',  './directory/to/create/page/in/'
 #
-def create_page filename, body = '', page_dir = JADOF::Page.dir
+def create_page filename, body = '', page_dir = @jadof_page_class.dir
   body.sub!("\n", '')     if body.lines.first == "\n" # get rid of first empty line
   body.sub!(/\n\s+$/, '') if body.lines.count > 0     # get rid of last  empty line
 
