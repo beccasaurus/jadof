@@ -11,6 +11,11 @@ module JADOF #:nodoc:
 
     DEFAULT_DIR = './pages/'
 
+    DEFAULT_FORMATTERS = {
+      'markdown' => lambda { |text| require 'maruku'; Maruku.new(text).to_html },
+      'erb'      => lambda { |text| require 'erb';    ERB.new(text).result     }
+    }
+
     # @return [String] A simple name for this {Page}.
     #
     # If the filename is `foo.markdown`, the name will be `foo`
@@ -105,7 +110,7 @@ module JADOF #:nodoc:
     # the formatted text.
     # @return [Hash{String => #call}]
     def self.formatters
-      @formatters ||= {}
+      @formatters ||= DEFAULT_FORMATTERS
     end
 
     # @return [Page] Get a Page by name

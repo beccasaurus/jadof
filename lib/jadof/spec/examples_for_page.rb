@@ -206,6 +206,15 @@ shared_examples_for "JADOF Page" do
       JADOF::Page[:foo].to_html.should == '<p><strong>Hello World!</strong></p>'
     end
 
+    it 'should have markdown and erb out of the box' do
+      create_page 'foo.markdown.erb', %{
+        <%= '*' * 2 %>Hello World!<%= '*' * 2 %>
+      }
+
+      JADOF::Page.formatters = JADOF::Page::DEFAULT_FORMATTERS
+      JADOF::Page[:foo].to_html.should == '<p><strong>Hello World!</strong></p>'
+    end
+
   end
 
   describe 'Caching' do

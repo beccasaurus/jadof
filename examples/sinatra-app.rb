@@ -3,9 +3,6 @@ include JADOF
 
 %w( rubygems sinatra haml maruku erb ).each {|lib| require lib }
 
-Page.formatters['erb']      = lambda {|text| ERB.new(text).result }
-Page.formatters['markdown'] = lambda {|text| Maruku.new(text).to_html }
-
 get '/' do
 puts Page.formatters.inspect
   @page = Page.get 'index'
