@@ -3,8 +3,9 @@ include JADOF
 
 %w( rubygems sinatra haml maruku erb ).each {|lib| require lib }
 
+set :root, File.dirname(__FILE__)
+
 get '/' do
-puts Page.formatters.inspect
   @page = Page.get 'index'
   haml :page
 end

@@ -29,7 +29,7 @@ module JADOF #:nodoc:
     attr_accessor :cache
 
     def dir
-      @dir ||= File.expand_path DEFAULT_DIR
+      @dir ||= File.expand_path JADOF::Page::DEFAULT_DIR
     end
 
     # When dir is set, we save it as an expanded path.
@@ -45,7 +45,7 @@ module JADOF #:nodoc:
     # the formatted text.
     # @return [Hash{String => #call}]
     def formatters
-      @formatters ||= DEFAULT_FORMATTERS
+      @formatters ||= JADOF::Page::DEFAULT_FORMATTERS
     end
 
     # @return [Page] Get a Page by name
