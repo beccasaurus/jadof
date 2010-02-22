@@ -59,10 +59,11 @@ module JADOF #:nodoc:
     end
 
     # @return [Array(Page)] Get all Pages in Page.dir
-    def all
-      cache_for 'all' do
+    def all conditions = nil
+      pages = cache_for 'all' do
         Dir[ File.join(dir, "**/*") ].reject {|path| File.directory?(path) }.map {|path| from_path(path) }
       end
+      conditions.nil? ? pages : where(conditions)
     end
 
     # @return [Fixnum] Returns the count of all Pages

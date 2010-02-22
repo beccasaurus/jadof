@@ -185,7 +185,7 @@ shared_examples_for "JADOF Page" do
         @jadof_page_class.first(:foo => 'bar'    ).foo.should == 'bar'
       end
 
-      it 'can get a page by *multiple* arbitrary conditions' do
+      it 'can get a page by *multiple* arbitrary conditions via #all or #where' do
         create_page 'foo.markdown', %{
           ---
           foo: bar
@@ -197,6 +197,11 @@ shared_examples_for "JADOF Page" do
         @jadof_page_class.where(:foo => 'not bar', :name => 'foo').should be_empty
         @jadof_page_class.where(:foo => 'bar', :name => 'foo').should_not be_empty
         @jadof_page_class.where(:foo => 'bar', :name => 'foo').first.name.should == 'foo'
+
+        @jadof_page_class.all(:foo => 'bar', :name => 'not foo').should be_empty
+        @jadof_page_class.all(:foo => 'not bar', :name => 'foo').should be_empty
+        @jadof_page_class.all(:foo => 'bar', :name => 'foo').should_not be_empty
+        @jadof_page_class.all(:foo => 'bar', :name => 'foo').first.name.should == 'foo'
       end
 
     end
