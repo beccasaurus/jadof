@@ -1,6 +1,6 @@
 Gem::Specification.new do |s|
   s.name     = 'jadof'
-  s.version  = '0.1.2'
+  s.version  = '0.1.3'
   s.summary  = 'Just A Directory Of Files (JADOF)'
   s.files    = Dir['lib/**/*.rb']
   s.author   = 'remi'
