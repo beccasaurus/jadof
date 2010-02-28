@@ -244,46 +244,6 @@ shared_examples_for "JADOF Page" do
         @jadof_page_class[:foo].to_html.should == '<p><strong>Hello World!</strong></p>'
       end
 
-      it 'formatters have access to the page' do
-        @jadof_page_class.formatters['something'] = lambda do |text, page|
-          text.gsub('FILENAME', page.filename)
-        end
-
-        create_page 'foo.something', %{
-          Hello from FILENAME
-        }
-
-        @jadof_page_class[:foo].body.should   == 'Hello from FILENAME'
-        @jadof_page_class[:foo].render.should == 'Hello from foo.something'
-      end
-
-      it 'formatters can be a class' do
-        class UpcaseFormatter
-          def self.call text
-            text.upcase
-          end
-        end
-
-        class FilenameFormatter
-          def self.call text, page
-            text.sub "FILENAME", page.filename
-          end
-        end
-
-        @jadof_page_class.formatters['upcase']   = UpcaseFormatter
-        @jadof_page_class.formatters['filename'] = FilenameFormatter
-
-        create_page 'foo.upcase', %{
-          Hello from FILENAME
-        }
-        create_page 'bar.filename', %{
-          Hello from FILENAME
-        }
-
-        @jadof_page_class[:foo].render.should == 'HELLO FROM FILENAME'
-        @jadof_page_class[:bar].render.should == 'Hello from bar.filename'
-      end
-
       it 'should support multiple file extensions, eg. foo.markdown.erb (erb renders first, then markdown)' do
         @jadof_page_class.formatters['markdown'] = lambda {|text| Maruku.new(text).to_html }
 

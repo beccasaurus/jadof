@@ -113,17 +113,27 @@ module JADOF #:nodoc:
 
     # @return [String] Using the #filename of the page given and available 
     # Page.formatters, we render and return the page #body.
-    def to_html page
+    def render page
       html = page.body
 
-      page.filename.scan(/\.([^\.]+)/).reverse.each do |match| # [ ["markdown"], ["erb"] ]
+      page.extensions.reverse.each do |match| # [ ["markdown"], ["erb"] ]
         if formatter = formatters[ match.first ]
-          html = formatter.call(html)
+          begin
+            html = formatter.call(html)
+          rescue ArgumentError => ex
+            if ex.message == 'wrong number of arguments (1 for 2)'
+              html = formatter.call(html, page)
+            else
+              raise
+            end
+          end
         end
       end
 
       html
     end
+
+    alias to_html render
 
     # @private
     # Helper for caching.  Will check to see if the {Page.cache} 
@@ -204,6 +214,11 @@ module JADOF #:nodoc:
     # it is in subdirectories.
     attr_accessor :parent
 
+    # @return [Array(String)] This file's extension(s).
+    def extensions
+      filename.scan(/\.([^\.]+)/).flatten
+    end
+
     # A page is a dumb object and doesn't know how to load itself from 
     # a file on the filesystem.  See `Page.from_path` to load a {Page} 
     # from a file.
@@ -226,9 +241,11 @@ module JADOF #:nodoc:
     # For `foo.markdown.erb`, `Page.formatters['erb']` and `Page.formatters['markdown']` will be used.
     #
     # With multiple extensions, the *last* extension is used first, and then the second-to-last, etc.
-    def to_html
-      self.class.to_html self
+    def render
+      self.class.render self
     end
+
+    alias to_html render
 
     # @return [true, false] If 2 pages have the same system path, they're the same.
     def == other_page
