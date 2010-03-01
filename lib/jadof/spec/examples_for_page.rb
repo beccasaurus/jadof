@@ -308,6 +308,13 @@ shared_examples_for "JADOF Page" do
         @jadof_page_class[:foo].to_html.should == '<p><strong>Hello World!</strong></p>'
       end
 
+      it "should have haml out of the box" do
+        create_page 'foo.haml', "#hola= 'Hello World'"        
+        @jadof_page_class.formatters = @jadof_page_class::DEFAULT_FORMATTERS
+        @jadof_page_class[:foo].to_html.should == "<div id='hola'>Hello World</div>\n"
+      end
+      
+      
     end
 
     describe ':: Caching' do

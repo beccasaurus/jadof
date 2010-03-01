@@ -182,7 +182,9 @@ module JADOF #:nodoc:
 
     DEFAULT_FORMATTERS = {
       'markdown' => lambda { |text| require 'maruku'; Maruku.new(text).to_html },
-      'erb'      => lambda { |text| require 'erb';    ERB.new(text).result     }
+      'erb'      => lambda { |text| require 'erb';    ERB.new(text).result     },
+      'haml'     => lambda { |text| require "haml";   Haml::Engine.new(text).render}
+
     }
 
     # @return [String] A simple name for this {Page}.
