@@ -181,10 +181,10 @@ module JADOF #:nodoc:
     DEFAULT_DIR = './pages/'
 
     DEFAULT_FORMATTERS = {
-      'markdown' => lambda { |text| require 'maruku'; Maruku.new(text).to_html },
-      'erb'      => lambda { |text| require 'erb';    ERB.new(text).result     },
-      'haml'     => lambda { |text| require "haml";   Haml::Engine.new(text).render}
-
+      'markdown' => lambda { |text| require 'maruku';   Maruku.new(text).to_html      },
+      'erb'      => lambda { |text| require 'erb';      ERB.new(text).result          },
+      'haml'     => lambda { |text| require 'haml';     Haml::Engine.new(text).render },
+      'textile'  => lambda { |text| require 'redcloth'; RedCloth.new(text).to_html    }
     }
 
     # @return [String] A simple name for this {Page}.
