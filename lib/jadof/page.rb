@@ -116,8 +116,8 @@ module JADOF #:nodoc:
     def render page
       html = page.body
 
-      page.extensions.reverse.each do |match| # [ ["markdown"], ["erb"] ]
-        if formatter = formatters[ match.first ]
+      page.extensions.reverse.each do |extension| # ["markdown", "erb"]
+        if formatter = formatters[extension]
           begin
             html = formatter.call(html)
           rescue ArgumentError => ex
