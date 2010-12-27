@@ -21,7 +21,6 @@
 #   directory with things you care about!
 #
 require 'rubygems'
-require 'spec'
 require 'fileutils'  # for creating/deleting directories for fake pages
 require 'hash-cache' # for testing caching
 require 'maruku'     # for testing rendering
