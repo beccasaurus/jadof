@@ -17,7 +17,7 @@ shared_examples_for "JADOF Post" do
     it 'it should have a date (which is used in to_param)' do
       create_page 'foo.markdown', %{
         ---
-        date: 01/31/2010
+        date: 2010-01-31
         ---
         
         hello world
